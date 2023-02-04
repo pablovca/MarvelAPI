@@ -25,11 +25,16 @@ total_events = 0
 
 
 def main():
+    if len(sys.argv) < 4:
+        print("Invalid number of parameters, Please check you are sending the postgres user password, the public key and private key")
+        return -1
+
     password = sys.argv[1]
     global public_key
     public_key = sys.argv[2]
     global private_key
     private_key = sys.argv[3]
+
     engine = connect_to_database(password)
     metadata = MetaData(schema='public')
     metadata.reflect(engine, schema='public')
@@ -39,18 +44,23 @@ def main():
 
 #This function get all the data fron the Marvel API, then creates the tables and inserts the data
 def create_tables(metadata, engine, connection):
+
+
     characters_data = get_all_json_data(Collection.characters)
     characters_table = create_table(metadata, engine, connection, 'characters', define_characters_table)
-    clear_table(metadata, connection, characters_table_name)
-    insert(characters_data, characters_table, connection, get_character_values)
 
     events_data = get_all_json_data(Collection.events)
     events_table = create_table(metadata, engine, connection, 'events', define_events_table)
-    clear_table(metadata, connection, events_table_name)
-    insert(events_data, events_table, connection, get_event_values)
 
     characters_events_table = create_table(metadata, engine, connection, 'characters_events', define_characters_events_table)
+    
     clear_table(metadata, connection, characters_events_table_name)
+    
+    clear_table(metadata, connection, characters_table_name)
+    insert(characters_data, characters_table, connection, get_character_values)
+    
+    clear_table(metadata, connection, events_table_name)
+    insert(events_data, events_table, connection, get_event_values)
     
     ids_array = []
     for result in characters_data:
@@ -79,8 +89,8 @@ def define_events_table(metadata):
         Column('id', Integer, primary_key=True),
         Column('title', String(200)),
         Column('description', String),
-        Column('next', String),
-        Column('previous', String)
+        Column('next', String, nullable=True),
+        Column('previous', String, nullable=True)
     )
 
 #Definition of the characters_events table
@@ -106,11 +116,13 @@ def get_character_values(character, characters_table):
 
 
 def get_event_values(event, events_table):
-    return events_table.insert().values(id=event['id'], title=event['title'], description=event['description'], next=['next'], previous=['previous'])
+    next = None if event['next'] == None else event['next']['name']
+    previous = None if event['previous'] == None else event['previous']['name'] 
+    return events_table.insert().values(id=event['id'], title=event['title'], description=event['description'], next=next, previous=previous)
 
 
 def get_characters_events_values(characters_events, characters_events_table):
-    print(characters_events['character_id'], characters_events['event_id'])
+    # print(characters_events['character_id'], characters_events['event_id'])
     return characters_events_table.insert().values(character_id=characters_events['character_id'], event_id=characters_events['event_id'])
 
 

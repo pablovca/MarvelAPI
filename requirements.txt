@@ -1,4 +1,4 @@
 requests
-sqlalquemy
-sqlalquemy-utils
+sqlalchemy
+sqlalchemy-utils
 psycopg2
