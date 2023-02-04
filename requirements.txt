@@ -1,0 +1,4 @@
+requests
+sqlalquemy
+sqlalquemy-utils
+psycopg2
